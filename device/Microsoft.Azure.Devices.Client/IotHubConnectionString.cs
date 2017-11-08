@@ -16,16 +16,11 @@ namespace Microsoft.Azure.Devices.Client
 
     using Microsoft.Azure.Devices.Client.Extensions;
 
-    sealed class IotHubConnectionString : IAuthorizationHeaderProvider
+    sealed class IotHubConnectionString : IAuthorizationProvider
 #if !NETMF
         , ICbsTokenProvider
 #endif
     {
-#if NETMF
-        static readonly TimeSpan DefaultTokenTimeToLive = new TimeSpan(1, 0, 0);
-#else
-        static readonly TimeSpan DefaultTokenTimeToLive = TimeSpan.FromHours(1);
-#endif
         const string UserSeparator = "@";
 
         public IotHubConnectionString(IotHubConnectionStringBuilder builder)
@@ -54,6 +49,15 @@ namespace Microsoft.Azure.Devices.Client
 #if !NETMF
             this.AmqpEndpoint = new UriBuilder(CommonConstants.AmqpsScheme, this.HostName, AmqpConstants.DefaultSecurePort).Uri;
 #endif
+
+            if (builder.AuthenticationMethod is DeviceAuthenticationWithTokenRefresh)
+            {
+                this.TokenRefresher = (DeviceAuthenticationWithTokenRefresh)builder.AuthenticationMethod;
+            }
+            else if (!string.IsNullOrEmpty(this.SharedAccessKey))
+            {
+                this.TokenRefresher = new DeviceAuthenticationWithSakRefresh(this.DeviceId, this);
+            }
         }
 
         public string IotHubName
@@ -112,45 +116,41 @@ namespace Microsoft.Azure.Devices.Client
             private set;
         }
 
-        public string GetPassword()
+        public DeviceAuthenticationWithTokenRefresh TokenRefresher
         {
-            string password;
-            if (this.SharedAccessSignature.IsNullOrWhiteSpace())
-            {
-                TimeSpan timeToLive;
-                password = this.BuildToken(out timeToLive);
-            }
-            else
-            {
-                password = this.SharedAccessSignature;
-            }
-
-            return password;
+            get;
+            private set;
         }
 
-        public string GetAuthorizationHeader()
+        Task<string> IAuthorizationProvider.GetPasswordAsync()
         {
-            return this.GetPassword();
+            if (!this.SharedAccessSignature.IsNullOrWhiteSpace())
+            {
+                return Task.FromResult(this.SharedAccessSignature);
+            }
+
+            return this.TokenRefresher.GetTokenAsync();
         }
 
 #if !NETMF
-        Task<CbsToken> ICbsTokenProvider.GetTokenAsync(Uri namespaceAddress, string appliesTo, string[] requiredClaims)
+        // Used by IotHubTokenRefresher.
+        async Task<CbsToken> ICbsTokenProvider.GetTokenAsync(Uri namespaceAddress, string appliesTo, string[] requiredClaims)
         {
             string tokenValue;
-            CbsToken token;
-            if (string.IsNullOrWhiteSpace(this.SharedAccessSignature))
+            DateTime expiresOn;
+
+            if (!string.IsNullOrWhiteSpace(this.SharedAccessSignature))
             {
-                TimeSpan timeToLive;
-                tokenValue = this.BuildToken(out timeToLive);
-                token = new CbsToken(tokenValue, CbsConstants.IotHubSasTokenType, DateTime.UtcNow.Add(timeToLive));
+                tokenValue = this.SharedAccessSignature;
+                expiresOn = DateTime.MaxValue;
             }
             else
             {
-                tokenValue = this.SharedAccessSignature;
-                token = new CbsToken(tokenValue, CbsConstants.IotHubSasTokenType, DateTime.MaxValue);
+                tokenValue = await this.TokenRefresher.GetTokenAsync();
+                expiresOn = this.TokenRefresher.ExpiresOn;
             }
 
-            return Task.FromResult(token);
+            return new CbsToken(tokenValue, CbsConstants.IotHubSasTokenType, expiresOn);
         }
 #endif
         public Uri BuildLinkAddress(string path)
@@ -165,39 +165,6 @@ namespace Microsoft.Azure.Devices.Client
 
             return builder.Uri;
 #endif
-        }
-
-        public static IotHubConnectionString Parse(string connectionString)
-        {
-            var builder = IotHubConnectionStringBuilder.Create(connectionString);
-            return builder.ToIotHubConnectionString();
-        }
-
-        string BuildToken(out TimeSpan ttl)
-        {
-            var builder = new SharedAccessSignatureBuilder()
-            {
-                Key = this.SharedAccessKey,
-                TimeToLive = DefaultTokenTimeToLive,
-            };
-
-            if (this.SharedAccessKeyName == null)
-            {
-#if NETMF
-                builder.Target = this.Audience + "/devices/" + WebUtility.UrlEncode(this.DeviceId);
-#else
-                builder.Target = "{0}/devices/{1}".FormatInvariant(this.Audience, WebUtility.UrlEncode(this.DeviceId));
-#endif
-            }
-            else
-            {
-                builder.KeyName = this.SharedAccessKeyName;
-                builder.Target = this.Audience;
-            }
-
-            ttl = builder.TimeToLive;
-
-            return builder.ToSignature();
         }
     }
 }

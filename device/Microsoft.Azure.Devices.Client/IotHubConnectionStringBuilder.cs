@@ -92,12 +92,29 @@ namespace Microsoft.Azure.Devices.Client
                 throw new ArgumentNullException("iotHubConnectionString");
             }
 
+            return CreateWithIAuthenticationOverride(iotHubConnectionString, null);
+        }
+
+        internal static IotHubConnectionStringBuilder CreateWithIAuthenticationOverride(
+            string iotHubConnectionString, 
+            IAuthenticationMethod authenticationMethod)
+        {
             var iotHubConnectionStringBuilder = new IotHubConnectionStringBuilder();
             iotHubConnectionStringBuilder.Parse(iotHubConnectionString);
-            iotHubConnectionStringBuilder.AuthenticationMethod = AuthenticationMethodFactory.GetAuthenticationMethod(iotHubConnectionStringBuilder);
+
+            if (authenticationMethod == null)
+            {
+                iotHubConnectionStringBuilder.AuthenticationMethod = 
+                    AuthenticationMethodFactory.GetAuthenticationMethod(iotHubConnectionStringBuilder);
+            }
+            else
+            {
+                iotHubConnectionStringBuilder.AuthenticationMethod = authenticationMethod;
+            }
 
             return iotHubConnectionStringBuilder;
         }
+
 
         /// <summary>
         /// Gets or sets the value of the fully-qualified DNS hostname of the IoT Hub service.
@@ -217,7 +234,7 @@ namespace Microsoft.Azure.Devices.Client
                 else if (part.IndexOf("SharedAccessKey") > -1)
                 {
                     // Shared Access Key
-                    // need to handle this differently becuase shared access key may have special chars such as '=' which break the string split
+                    // need to handle this differently because shared access key may have special chars such as '=' which break the string split
                     this.SharedAccessKey = part.Substring(part.IndexOf('=') + 1);
                 }
                 else if (part.IndexOf("SharedAccessSignature") > -1)
@@ -244,6 +261,7 @@ namespace Microsoft.Azure.Devices.Client
             this.UsingX509Cert = GetConnectionStringOptionalValueOrDefault<bool>(map, X509CertPropertyName, GetX509, true);
             this.GatewayHostName = GetConnectionStringOptionalValue(map, GatewayHostNamePropertyName);
 #endif
+
             this.Validate();
         }
 
