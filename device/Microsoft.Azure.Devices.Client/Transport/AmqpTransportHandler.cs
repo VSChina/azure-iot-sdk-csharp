@@ -59,6 +59,7 @@ namespace Microsoft.Azure.Devices.Client.Transport
 
         ConcurrentDictionary<string, TaskCompletionSource<AmqpMessage>> twinResponseCompletions = new ConcurrentDictionary<string, TaskCompletionSource<AmqpMessage>>();
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Await.Warning", "CS4014:Await.Warning")]
         internal AmqpTransportHandler(
             IPipelineContext context, IotHubConnectionString connectionString, 
             AmqpTransportSettings transportSettings,
@@ -911,6 +912,7 @@ namespace Microsoft.Azure.Devices.Client.Transport
             char[] chars = new Char[source.Length];
             source.CopyTo(0, chars, 0, source.Length);
             destination = new String(chars);
+            
         }
     }
 }

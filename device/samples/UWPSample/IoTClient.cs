@@ -52,6 +52,9 @@ namespace Microsoft.Azure.Devices.Client.Samples
                 // Set up callbacks:
                 if(this.Protocol == TransportType.Mqtt || this.Protocol == TransportType.Mqtt_Tcp_Only || this.Protocol == TransportType.Mqtt_WebSocket_Only)
                 {
+                    X509Certificate2 x509 = new X509Certificate2("C:\\Users\\ryjoh\\Desktop\\certs\\x509.pfx", "lolpop");
+                    var authMethod = new DeviceAuthenticationWithX509Certificate(deviceId, x509);
+                    return DeviceClient.Create(ConnectionString, authMethod);
                     await deviceClient.SetMethodHandlerAsync("microsoft.management.immediateReboot", ImmediateReboot, null);
                     await deviceClient.SetMethodHandlerAsync("GetDeviceName", GetDeviceName, new DeviceData("Some UWP Device"));
                 }

@@ -34,7 +34,7 @@ namespace Microsoft.Azure.Devices.Client.TransientFaultHandling
     {
         private static Task<bool> cachedBoolTask;
 
-        public AsyncExecution(Func<Task> taskAction, ShouldRetry shouldRetry, Func<Exception, bool> isTransient, Action<int, Exception, TimeSpan> onRetrying, bool fastFirstRetry, CancellationToken cancellationToken) : base(() => AsyncExecution.StartAsGenericTask(taskAction), shouldRetry, isTransient, onRetrying, fastFirstRetry, cancellationToken)
+        public AsyncExecution(Func<Task> taskAction, ShouldRetry shouldRetry, Func<Exception, bool> isTransient, Action<int, Exception, TimeSpan> onRetrying, bool fastFirstRetry, CancellationToken cancellationToken) : base(() => AsyncExecution.StartAsGenericTask(taskAction, cancellationToken), shouldRetry, isTransient, onRetrying, fastFirstRetry, cancellationToken)
         {
         }
 
@@ -43,10 +43,17 @@ namespace Microsoft.Azure.Devices.Client.TransientFaultHandling
         /// </summary>
         /// <param name="taskAction">The task to wrap.</param>
         /// <returns>A <see cref="T:System.Threading.Tasks.Task" /> that wraps the non-generic <see cref="T:System.Threading.Tasks.Task" />.</returns>
-        private static Task<bool> StartAsGenericTask(Func<Task> taskAction)
+        private static Task<bool> StartAsGenericTask(Func<Task> taskAction, CancellationToken cancellationToken)
         {
+            if (cancellationToken.IsCancellationRequested)
+            {
+                TaskCompletionSource<bool> taskCompletionSource = new TaskCompletionSource<bool>();
+                taskCompletionSource.SetCanceled();
+                // taskCompletionSource.TrySetCanceled();
+                return taskCompletionSource.Task;
+            }
             Task task = taskAction();
-            if (task == null)
+             if (task == null)
             {
                 throw new ArgumentException(string.Format(CultureInfo.InvariantCulture, Resources.TaskCannotBeNull, new object[]
                 {
@@ -69,16 +76,16 @@ namespace Microsoft.Azure.Devices.Client.TransientFaultHandling
             {
                 if (t.IsFaulted)
                 {
-                    tcs.TrySetException(t.Exception.InnerExceptions);
+                    tcs.SetException(t.Exception.InnerExceptions);
                     return;
                 }
                 if (t.IsCanceled)
                 {
-                    tcs.TrySetCanceled();
+                    tcs.SetCanceled();
                     return;
                 }
-                tcs.TrySetResult(true);
-            }, TaskContinuationOptions.ExecuteSynchronously);
+                tcs.SetResult(true);
+            }, TaskContinuationOptions.OnlyOnFaulted);
             return tcs.Task;
         }
 

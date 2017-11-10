@@ -157,7 +157,7 @@ TODO: revisit DefaultDelegatingHandler - it seems redundant as long as we have t
         }
 #endif
 
-        private T GetDelegateHandler<T>() where T: DefaultDelegatingHandler
+        private T GetDelegateHandler<T>() where T : DefaultDelegatingHandler
         {
             var handler = this.InnerHandler as DefaultDelegatingHandler;
             bool isFound = false;
@@ -179,7 +179,7 @@ TODO: revisit DefaultDelegatingHandler - it seems redundant as long as we have t
                 return default(T);
             }
 
-            return (T) handler;
+            return (T)handler;
         }
 
         /// <summary>
@@ -769,7 +769,7 @@ TODO: revisit DefaultDelegatingHandler - it seems redundant as long as we have t
             // Codes_SRS_DEVICECLIENT_28_019: [The async operation shall retry until time specified in OperationTimeoutInMilliseconds property expire or unrecoverable error(authentication or quota exceed) occurs.]
             return ApplyTimeout(operationTimeoutCancellationToken => this.InnerHandler.SendEventAsync(messages, operationTimeoutCancellationToken));
         }
-        
+
         Task ApplyTimeout(Func<CancellationTokenSource, Task> operation)
         {
             if (OperationTimeoutInMilliseconds == 0)
@@ -905,9 +905,9 @@ TODO: revisit DefaultDelegatingHandler - it seems redundant as long as we have t
             {
                 httpTransport = new HttpTransportHandler(iotHubConnectionString);
             }
-#else 
+#else
             httpTransport = new HttpTransportHandler(iotHubConnectionString);
-            #endif
+#endif
             return httpTransport.UploadToBlobAsync(blobName, source);
         }
 #endif
@@ -1134,7 +1134,7 @@ TODO: revisit DefaultDelegatingHandler - it seems redundant as long as we have t
                 await methodsDictionarySemaphore.WaitAsync();
                 try
                 {
-                    Utils.ValidateDataIsEmptyOrJson(requestData);                    
+                    Utils.ValidateDataIsEmptyOrJson(requestData);
                     this.deviceMethods?.TryGetValue(methodRequestInternal.Name, out m);
                     if (m == null)
                     {
@@ -1268,7 +1268,7 @@ TODO: revisit DefaultDelegatingHandler - it seems redundant as long as we have t
 
         static ITransportSettings[] PopulateCertificateInTransportSettings(IotHubConnectionStringBuilder connectionStringBuilder, ITransportSettings[] transportSettings)
         {
-            foreach (var transportSetting in  transportSettings)
+            foreach (var transportSetting in transportSettings)
             {
                 switch (transportSetting.GetTransportType())
                 {
@@ -1362,8 +1362,26 @@ TODO: revisit DefaultDelegatingHandler - it seems redundant as long as we have t
             return ApplyTimeout(async operationTimeoutCancellationToken =>
             {
                 // Codes_SRS_DEVICECLIENT_18_002: `UpdateReportedPropertiesAsync` shall call `SendTwinPatchAsync` on the transport to update the reported properties
-                 await this.InnerHandler.SendTwinPatchAsync(reportedProperties, operationTimeoutCancellationToken);
+                await this.InnerHandler.SendTwinPatchAsync(reportedProperties, operationTimeoutCancellationToken);
             });
+        }
+
+
+
+        public async Task CheckConnections()
+        {
+            Type a = this.InnerHandler.GetType();
+            if (a == typeof(AmqpTransportHandler)){
+                await this.InnerHandler.RecoverConnections(null, ConnectionType.AmqpMessaging, new CancellationToken());
+                await this.InnerHandler.RecoverConnections(null, ConnectionType.AmqpMethodReceiving, new CancellationToken());
+                await this.InnerHandler.RecoverConnections(null, ConnectionType.AmqpMethodSending, new CancellationToken());
+                await this.InnerHandler.RecoverConnections(null, ConnectionType.AmqpTelemetry, new CancellationToken());
+                await this.InnerHandler.RecoverConnections(null, ConnectionType.AmqpTwinReceiving, new CancellationToken());
+                await this.InnerHandler.RecoverConnections(null, ConnectionType.AmqpTwinSending, new CancellationToken());
+            }
+            if (a == typeof(MqttTransportHandler)) {
+                await this.InnerHandler.RecoverConnections(null, ConnectionType.MqttConnection, new CancellationToken());
+            }
         }
 
         //  Codes_SRS_DEVICECLIENT_18_005: When a patch is received from the service, the `callback` shall be called.
