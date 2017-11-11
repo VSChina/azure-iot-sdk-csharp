@@ -8,15 +8,12 @@ namespace Microsoft.Azure.Devices.Client
 
 #if !NETMF
     using Microsoft.Azure.Amqp;
-#endif
-
-#if !NETMF
     using System.Threading.Tasks;
 #endif
 
     using Microsoft.Azure.Devices.Client.Extensions;
 
-    sealed class IotHubConnectionString : IAuthorizationProvider
+    internal sealed partial class IotHubConnectionString : IAuthorizationProvider
 #if !NETMF
         , ICbsTokenProvider
 #endif
@@ -48,7 +45,6 @@ namespace Microsoft.Azure.Devices.Client
 
 #if !NETMF
             this.AmqpEndpoint = new UriBuilder(CommonConstants.AmqpsScheme, this.HostName, AmqpConstants.DefaultSecurePort).Uri;
-#endif
 
             if (builder.AuthenticationMethod is DeviceAuthenticationWithTokenRefresh)
             {
@@ -58,6 +54,7 @@ namespace Microsoft.Azure.Devices.Client
             {
                 this.TokenRefresher = new DeviceAuthenticationWithSakRefresh(this.DeviceId, this);
             }
+#endif
         }
 
         public string IotHubName
@@ -114,57 +111,6 @@ namespace Microsoft.Azure.Devices.Client
         {
             get;
             private set;
-        }
-
-        public DeviceAuthenticationWithTokenRefresh TokenRefresher
-        {
-            get;
-            private set;
-        }
-
-        Task<string> IAuthorizationProvider.GetPasswordAsync()
-        {
-            if (!this.SharedAccessSignature.IsNullOrWhiteSpace())
-            {
-                return Task.FromResult(this.SharedAccessSignature);
-            }
-
-            return this.TokenRefresher.GetTokenAsync();
-        }
-
-#if !NETMF
-        // Used by IotHubTokenRefresher.
-        async Task<CbsToken> ICbsTokenProvider.GetTokenAsync(Uri namespaceAddress, string appliesTo, string[] requiredClaims)
-        {
-            string tokenValue;
-            DateTime expiresOn;
-
-            if (!string.IsNullOrWhiteSpace(this.SharedAccessSignature))
-            {
-                tokenValue = this.SharedAccessSignature;
-                expiresOn = DateTime.MaxValue;
-            }
-            else
-            {
-                tokenValue = await this.TokenRefresher.GetTokenAsync();
-                expiresOn = this.TokenRefresher.ExpiresOn;
-            }
-
-            return new CbsToken(tokenValue, CbsConstants.IotHubSasTokenType, expiresOn);
-        }
-#endif
-        public Uri BuildLinkAddress(string path)
-        {
-#if NETMF
-            throw new NotImplementedException();
-#else
-            var builder = new UriBuilder(this.AmqpEndpoint)
-            {
-                Path = path,
-            };
-
-            return builder.Uri;
-#endif
         }
     }
 }

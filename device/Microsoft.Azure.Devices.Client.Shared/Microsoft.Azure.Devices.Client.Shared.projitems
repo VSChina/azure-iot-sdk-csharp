@@ -294,6 +294,9 @@
     <Compile Include="$(MSBuildThisFileDirectory)$(DeviceClientDir)\IotHubConnectionString.cs">
       <Link>IotHubConnectionString.cs</Link>
     </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)$(DeviceClientDir)\IotHubConnectionString.Core.cs">
+      <Link>IotHubConnectionString.Core.cs</Link>
+    </Compile>
     <Compile Include="$(MSBuildThisFileDirectory)$(DeviceClientDir)\IotHubConnectionStringBuilder.cs">
       <Link>IotHubConnectionStringBuilder.cs</Link>
     </Compile>
