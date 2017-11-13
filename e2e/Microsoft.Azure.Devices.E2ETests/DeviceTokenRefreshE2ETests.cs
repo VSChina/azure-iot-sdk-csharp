@@ -49,7 +49,6 @@ namespace Microsoft.Azure.Devices.E2ETests
                                 
                 var refresher = new TestTokenRefresher(
                     device.Id, 
-                    builder.HostName, 
                     device.Authentication.SymmetricKey.PrimaryKey, 
                     ttl, 
                     buffer);
@@ -100,7 +99,6 @@ namespace Microsoft.Azure.Devices.E2ETests
         {
             private int _callCount = 0;
             private string _key;
-            private string _hostName;
 
             public int SafeCreateNewTokenCallCount
             {
@@ -110,25 +108,22 @@ namespace Microsoft.Azure.Devices.E2ETests
                 }
             }
 
-            public TestTokenRefresher(string deviceId, string hostName, string key) : base(deviceId)
+            public TestTokenRefresher(string deviceId, string key) : base(deviceId)
             {
                 _key = key;
-                _hostName = hostName;
             }
 
             public TestTokenRefresher(
                 string deviceId, 
-                string hostName, 
                 string key, 
                 int suggestedTimeToLive, 
                 int timeBufferPercentage) 
                 : base(deviceId, suggestedTimeToLive, timeBufferPercentage)
             {
                 _key = key;
-                _hostName = hostName;
             }
 
-            protected override Task<string> SafeCreateNewToken(int suggestedTimeToLive)
+            protected override Task<string> SafeCreateNewToken(string iotHub, int suggestedTimeToLive)
             {
                 Debug.WriteLine($"Refresher: Creating new token {_callCount}");
 
@@ -139,7 +134,7 @@ namespace Microsoft.Azure.Devices.E2ETests
                     Target = string.Format(
                         CultureInfo.InvariantCulture,
                         "{0}/devices/{1}",
-                        _hostName,
+                        iotHub,
                         WebUtility.UrlEncode(DeviceId)),
                 };
 

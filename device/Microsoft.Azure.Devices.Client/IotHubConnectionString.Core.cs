@@ -24,7 +24,7 @@ namespace Microsoft.Azure.Devices.Client
                 return Task.FromResult(this.SharedAccessSignature);
             }
 
-            return this.TokenRefresher.GetTokenAsync();
+            return this.TokenRefresher.GetTokenAsync(this.Audience);
         }
 
         // Used by IotHubTokenRefresher.
@@ -40,7 +40,7 @@ namespace Microsoft.Azure.Devices.Client
             }
             else
             {
-                tokenValue = await this.TokenRefresher.GetTokenAsync();
+                tokenValue = await this.TokenRefresher.GetTokenAsync(this.Audience);
                 expiresOn = this.TokenRefresher.ExpiresOn;
             }
 

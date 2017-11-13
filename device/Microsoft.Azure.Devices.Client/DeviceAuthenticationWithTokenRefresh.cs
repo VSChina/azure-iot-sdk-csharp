@@ -23,7 +23,7 @@ namespace Microsoft.Azure.Devices.Client
 
         private int _bufferSeconds;
         private SemaphoreSlim _lock = new SemaphoreSlim(1);
-        private string _token;
+        private string _token = null;
         private DateTime _expiryTime;
 
         /// <summary>
@@ -66,13 +66,13 @@ namespace Microsoft.Azure.Devices.Client
         /// Initializes a new instance of the <see cref="DeviceAuthenticationWithTokenRefresh"/> class.
         /// </summary>
         /// <param name="deviceId">Device Identifier.</param>
-        /// <param name="suggestedTimeToLive">Token time to live suggested value. The implementations of this abstract
+        /// <param name="suggestedTimeToLiveSeconds">Token time to live suggested value. The implementations of this abstract
         /// may choose to ignore this value.</param>
         /// <param name="timeBufferPercentage">Time buffer before expiry when the token should be renewed expressed as 
         /// a percentage of the time to live.</param>
         public DeviceAuthenticationWithTokenRefresh(
             string deviceId, 
-            int suggestedTimeToLive, 
+            int suggestedTimeToLiveSeconds, 
             int timeBufferPercentage)
         {
             if (deviceId.IsNullOrWhiteSpace())
@@ -80,9 +80,9 @@ namespace Microsoft.Azure.Devices.Client
                 throw new ArgumentNullException(nameof(deviceId));
             }
 
-            if (suggestedTimeToLive < 0)
+            if (suggestedTimeToLiveSeconds < 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(suggestedTimeToLive));
+                throw new ArgumentOutOfRangeException(nameof(suggestedTimeToLiveSeconds));
             }
 
             if (timeBufferPercentage < 0 || timeBufferPercentage > 100)
@@ -91,7 +91,7 @@ namespace Microsoft.Azure.Devices.Client
             }
 
             _deviceId = deviceId;
-            _suggestedTimeToLiveSeconds = suggestedTimeToLive;
+            _suggestedTimeToLiveSeconds = suggestedTimeToLiveSeconds;
             _timeBufferPercentage = timeBufferPercentage;
             _expiryTime = DateTime.UtcNow.AddSeconds(- _suggestedTimeToLiveSeconds);
             Debug.Assert(IsExpiring);
@@ -101,7 +101,7 @@ namespace Microsoft.Azure.Devices.Client
         /// <summary>
         /// Gets a snapshot of the security token associated with the device. This call is thread-safe.
         /// </summary>
-        public async Task<string> GetTokenAsync()
+        public async Task<string> GetTokenAsync(string iotHub)
         {
             if (!IsExpiring)
             {
@@ -117,7 +117,7 @@ namespace Microsoft.Azure.Devices.Client
                     return _token;
                 }
 
-                _token = await SafeCreateNewToken(_suggestedTimeToLiveSeconds);
+                _token = await SafeCreateNewToken(iotHub, _suggestedTimeToLiveSeconds);
 
                 SharedAccessSignature sas = SharedAccessSignature.Parse(".", _token);
                 _expiryTime = sas.ExpiresOn;
@@ -152,7 +152,7 @@ namespace Microsoft.Azure.Devices.Client
             return iotHubConnectionStringBuilder;
         }
 
-        protected abstract Task<string> SafeCreateNewToken(int suggestedTimeToLive);
+        protected abstract Task<string> SafeCreateNewToken(string iotHub, int suggestedTimeToLive);
 
         private void UpdateTimeBufferSeconds(int ttl)
         {

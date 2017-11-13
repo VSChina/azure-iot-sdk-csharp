@@ -35,19 +35,20 @@ namespace Microsoft.Azure.Devices.Client
 #endif
 
 #if !NETMF
-        static readonly string HostNamePropertyName = nameof(HostName);
-        static readonly string DeviceIdPropertyName = nameof(DeviceId);
-        static readonly string SharedAccessKeyNamePropertyName = nameof(SharedAccessKeyName); 
-        static readonly string SharedAccessKeyPropertyName = nameof(SharedAccessKey); 
-        static readonly string SharedAccessSignaturePropertyName = nameof(SharedAccessSignature);
-        static readonly string GatewayHostNamePropertyName = nameof(GatewayHostName);
-        static readonly string X509CertPropertyName =  "X509Cert";
+        const string HostNamePropertyName = nameof(HostName);
+        const string DeviceIdPropertyName = nameof(DeviceId);
+        const string SharedAccessKeyNamePropertyName = nameof(SharedAccessKeyName);
+        const string SharedAccessKeyPropertyName = nameof(SharedAccessKey);
+        const string SharedAccessSignaturePropertyName = nameof(SharedAccessSignature);
+        const string GatewayHostNamePropertyName = nameof(GatewayHostName);
+        const string X509CertPropertyName =  "X509Cert";
         static readonly Regex HostNameRegex = new Regex(@"[a-zA-Z0-9_\-\.]+$", regexOptions);
         static readonly Regex DeviceIdRegex = new Regex(@"^[A-Za-z0-9\-:.+%_#*?!(),=@;$']{1,128}$", regexOptions);
         static readonly Regex SharedAccessKeyNameRegex = new Regex(@"^[a-zA-Z0-9_\-@\.]+$", regexOptions);
         static readonly Regex SharedAccessKeyRegex = new Regex(@"^.+$", regexOptions);
         static readonly Regex SharedAccessSignatureRegex = new Regex(@"^.+$", regexOptions);
         static readonly Regex X509CertRegex = new Regex(@"^[true|false]+$", regexOptions);
+        
 #endif
 
         string hostName;
@@ -99,17 +100,21 @@ namespace Microsoft.Azure.Devices.Client
             string iotHubConnectionString, 
             IAuthenticationMethod authenticationMethod)
         {
-            var iotHubConnectionStringBuilder = new IotHubConnectionStringBuilder();
-            iotHubConnectionStringBuilder.Parse(iotHubConnectionString);
+            var iotHubConnectionStringBuilder = new IotHubConnectionStringBuilder()
+            {
+                HostName = "TEMP.HUB",
+            };
 
             if (authenticationMethod == null)
             {
+                iotHubConnectionStringBuilder.Parse(iotHubConnectionString);
                 iotHubConnectionStringBuilder.AuthenticationMethod = 
                     AuthenticationMethodFactory.GetAuthenticationMethod(iotHubConnectionStringBuilder);
             }
             else
             {
                 iotHubConnectionStringBuilder.AuthenticationMethod = authenticationMethod;
+                iotHubConnectionStringBuilder.Parse(iotHubConnectionString);
             }
 
             return iotHubConnectionStringBuilder;
@@ -275,7 +280,7 @@ namespace Microsoft.Azure.Devices.Client
             if (!(this.SharedAccessKey.IsNullOrWhiteSpace() ^ this.SharedAccessSignature.IsNullOrWhiteSpace()))
             {
 #if !WINDOWS_UWP && !PCL && !NETMF
-                if (!this.UsingX509Cert)
+                if (!(this.UsingX509Cert || (this.AuthenticationMethod is DeviceAuthenticationWithTokenRefresh)))
                 {
 #endif
                     throw new ArgumentException("Should specify either SharedAccessKey or SharedAccessSignature if X.509 certificate is not used");

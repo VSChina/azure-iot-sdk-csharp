@@ -19,7 +19,7 @@ namespace Microsoft.Azure.Devices.Client
             _connectionString = connectionString;
         }
 
-        protected override Task<string> SafeCreateNewToken(int suggestedTimeToLive)
+        protected override Task<string> SafeCreateNewToken(string iotHub, int suggestedTimeToLive)
         {
             var builder = new SharedAccessSignatureBuilder()
             {
@@ -29,13 +29,9 @@ namespace Microsoft.Azure.Devices.Client
 
             if (_connectionString.SharedAccessKeyName == null)
             {
-#if NETMF
-                builder.Target = _connectionString.Audience + "/devices/" + WebUtility.UrlEncode(_connectionString.DeviceId);
-#else
                 builder.Target = "{0}/devices/{1}".FormatInvariant(
-                    _connectionString.Audience, 
+                    iotHub, 
                     WebUtility.UrlEncode(DeviceId));
-#endif
             }
             else
             {
