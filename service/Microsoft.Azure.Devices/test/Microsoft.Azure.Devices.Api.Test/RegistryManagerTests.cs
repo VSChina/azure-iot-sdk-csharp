@@ -941,6 +941,76 @@ namespace Microsoft.Azure.Devices.Api.Test
         [TestMethod]
         [TestCategory("CIT")]
         [TestCategory("API")]
+        public async Task UpdateE2EDiagnosticSettingAsyncTest()
+        {
+            var settingToReturn = new E2EDiagnosticSetting(50);
+            var twin = new Twin("abcd");
+            twin.Properties.Desired = new TwinCollection("{__e2e_diag_sample_rate:50}");
+            var restOpMock = new Mock<IHttpClientHelper>();
+            restOpMock.Setup(restOp => restOp.PatchAsync<Twin, Twin>(It.IsAny<Uri>(), It.IsAny<Twin>(), It.IsAny<string>(), It.IsAny<PutOperationType>(), It.IsAny<IDictionary<HttpStatusCode, Func<HttpResponseMessage, Task<Exception>>>>(), It.IsAny<CancellationToken>())).ReturnsAsync(twin);
+
+            var registryManager = new HttpRegistryManager(restOpMock.Object, IotHubName);
+            var returnedSetting = await registryManager.UpdateE2EDiagnosticSettingAsync("abcd", settingToReturn, "*");
+            Assert.AreEqual(settingToReturn.SamplingRate, returnedSetting.SamplingRate);
+            restOpMock.VerifyAll();
+        }
+
+        [ExpectedException(typeof(ArgumentNullException))]
+        [TestMethod]
+        [TestCategory("CIT")]
+        [TestCategory("API")]
+        public async Task UpdateE2EDiagnosticSettingWithNullSettingTest()
+        {
+            var restOpMock = new Mock<IHttpClientHelper>();
+            var registryManager = new HttpRegistryManager(restOpMock.Object, IotHubName);
+            await registryManager.UpdateE2EDiagnosticSettingAsync("abcd", null, "*");
+            Assert.Fail("UpdateE2EDiagnosticSetting api did not throw exception when the setting was null.");
+        }
+
+        [ExpectedException(typeof(ArgumentNullException))]
+        [TestMethod]
+        [TestCategory("CIT")]
+        [TestCategory("API")]
+        public async Task UpdateE2EDiagnosticSettingWithEmptyDeviceIdTest()
+        {
+            var settingToReturn = new E2EDiagnosticSetting(50);
+            var restOpMock = new Mock<IHttpClientHelper>();
+            var registryManager = new HttpRegistryManager(restOpMock.Object, IotHubName);
+            await registryManager.UpdateE2EDiagnosticSettingAsync("", settingToReturn, "*");
+            Assert.Fail("UpdateE2EDiagnosticSetting api did not throw exception when the deviceId was empty.");
+        }
+
+        [TestMethod]
+        [TestCategory("CIT")]
+        [TestCategory("API")]
+        public async Task GetE2EDiagnosticSettingAsyncTest()
+        {
+            var twin = new Twin("abcd");
+            twin.Properties.Desired = new TwinCollection("{__e2e_diag_sample_rate:50}");
+            var restOpMock = new Mock<IHttpClientHelper>();
+            restOpMock.Setup(restOp => restOp.GetAsync<Twin>(It.IsAny<Uri>(), It.IsAny<Dictionary<HttpStatusCode, Func<HttpResponseMessage, Task<Exception>>>>(), null, It.IsAny<Boolean>(), It.IsAny<CancellationToken>())).ReturnsAsync(twin);
+            var registryManager = new HttpRegistryManager(restOpMock.Object, IotHubName);
+            var setting = await registryManager.GetE2EDiagnosticSettingAsync("abc");
+            Assert.AreEqual(setting.SamplingRate, 50);
+        }
+
+        [TestMethod]
+        [TestCategory("CIT")]
+        [TestCategory("API")]
+        public async Task GetE2EDiagnosticSettingAsyncWithNullResultTest()
+        {
+            var twin = new Twin("abcd");
+            twin.Properties.Desired = new TwinCollection("{}");
+            var restOpMock = new Mock<IHttpClientHelper>();
+            restOpMock.Setup(restOp => restOp.GetAsync<Twin>(It.IsAny<Uri>(), It.IsAny<Dictionary<HttpStatusCode, Func<HttpResponseMessage, Task<Exception>>>>(), null, It.IsAny<Boolean>(), It.IsAny<CancellationToken>())).ReturnsAsync(twin);
+            var registryManager = new HttpRegistryManager(restOpMock.Object, IotHubName);
+            var setting = await registryManager.GetE2EDiagnosticSettingAsync("abc");
+            Assert.IsNull(setting);
+        }
+
+        [TestMethod]
+        [TestCategory("CIT")]
+        [TestCategory("API")]
         public void DisposeTest()
         {
             var restOpMock = new Mock<IHttpClientHelper>();

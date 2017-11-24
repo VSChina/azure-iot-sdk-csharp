@@ -740,6 +740,58 @@ namespace Microsoft.Azure.Devices
             return this.ReplaceTwinAsync(deviceId, twin, etag, cancellationToken);
         }
 
+        public override Task<E2EDiagnosticSetting> UpdateE2EDiagnosticSettingAsync(string deviceId, E2EDiagnosticSetting setting, string etag)
+        {
+            return this.UpdateE2EDiagnosticSettingAsync(deviceId, setting, etag, CancellationToken.None);
+        }
+
+        public override async Task<E2EDiagnosticSetting> UpdateE2EDiagnosticSettingAsync(string deviceId, E2EDiagnosticSetting setting, string etag, CancellationToken cancellationToken)
+        {
+            this.EnsureInstanceNotClosed();
+
+            if(string.IsNullOrEmpty(deviceId))
+            {
+                throw new ArgumentNullException(nameof(deviceId));
+            }
+
+            if (setting == null)
+            {
+                throw new ArgumentNullException(nameof(setting));
+            }
+
+            if (string.IsNullOrEmpty(etag))
+            {
+                throw new ArgumentNullException(nameof(etag));
+            }
+
+            var errorMappingOverrides = new Dictionary<HttpStatusCode, Func<HttpResponseMessage, Task<Exception>>>
+            {
+                {
+                    HttpStatusCode.PreconditionFailed,
+                    async responseMessage => new PreconditionFailedException(await ExceptionHandlingHelper.GetExceptionMessageAsync(responseMessage))
+                },
+                {
+                    HttpStatusCode.NotFound,
+                    async responseMessage => new DeviceNotFoundException(await ExceptionHandlingHelper.GetExceptionMessageAsync(responseMessage), (Exception)null)
+                }
+            };
+
+            var twin = new Twin(deviceId);
+            var settingJson = JsonConvert.SerializeObject(setting);
+            twin.Properties.Desired = new TwinCollection(settingJson);
+            twin.ETag = etag;
+            var twinResult = await UpdateTwinAsync(deviceId, twin, etag);
+            var updatedDiagnosticSetting = JsonConvert.DeserializeObject<E2EDiagnosticSetting>(twinResult.Properties.Desired.ToJson());
+            return updatedDiagnosticSetting;
+        }
+
+        public override async Task<E2EDiagnosticSetting> GetE2EDiagnosticSettingAsync(string deviceId)
+        {
+            var twinResult = await GetTwinAsync(deviceId);
+            var E2EDiagnosticSetting = JsonConvert.DeserializeObject<E2EDiagnosticSetting>(twinResult.Properties.Desired.ToJson());
+            return E2EDiagnosticSetting;
+        }
+
         public override Task<Twin> ReplaceTwinAsync(string deviceId, Twin newTwin, string etag)
         {
             return this.ReplaceTwinAsync(deviceId, newTwin, etag, CancellationToken.None);

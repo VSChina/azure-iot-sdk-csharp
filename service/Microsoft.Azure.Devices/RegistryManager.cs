@@ -634,5 +634,33 @@ namespace Microsoft.Azure.Devices
         /// <param name="cancellationToken">Cancellation token</param>
         /// <returns>Updated Twin instance</returns>
         public abstract Task<Twin> ReplaceTwinAsync(string deviceId, string newTwinJson, string etag, CancellationToken cancellationToken);
+
+        /// <summary>
+        /// Update the diagnostic settings
+        /// </summary>
+        /// <param name="deviceId">Device Id</param>
+        /// <param name="setting"><see cref="E2EDiagnosticSetting"/></param>
+        /// <param name="etag">Device ETag</param>
+        /// <returns>echoes back the E2EDiagnosticSetting object</returns>
+        public abstract Task<E2EDiagnosticSetting> UpdateE2EDiagnosticSettingAsync(string deviceId, E2EDiagnosticSetting setting, string etag);
+
+        /// <summary>
+        /// Update the diagnostic settings
+        /// </summary>
+        /// <param name="deviceId">Device Id</param>
+        /// <param name="setting"><see cref="E2EDiagnosticSetting"/></param>
+        /// <param name="etag">Device ETag</param>
+        /// <param name="cancellationToken">
+        /// The token which allows the the operation to be cancelled.
+        /// </param>
+        /// <returns>echoes back the E2EDiagnosticSetting object</returns>
+        public abstract Task<E2EDiagnosticSetting> UpdateE2EDiagnosticSettingAsync(string deviceId, E2EDiagnosticSetting setting, string etag, CancellationToken cancellationToken);
+
+        /// <summary>
+        /// Get the diagnostic settings
+        /// </summary>
+        /// <param name="deviceId">Device Id</param>
+        /// <returns>the desired E2EDiagnosticSetting object</returns>
+        public abstract Task<E2EDiagnosticSetting> GetE2EDiagnosticSettingAsync(string deviceId);
     }
 }

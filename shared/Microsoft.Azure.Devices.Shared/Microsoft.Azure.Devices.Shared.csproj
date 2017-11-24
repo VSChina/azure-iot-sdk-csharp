@@ -53,6 +53,8 @@
     <Compile Include="Common\Extensions\StringFormattingExtensions.cs" />
     <Compile Include="DeviceConnectionState.cs" />
     <Compile Include="DeviceStatus.cs" />
+    <Compile Include="E2EDiagnosticSetting.cs" />
+    <Compile Include="E2EDiagnosticSettingJsonConverter.cs" />
     <Compile Include="ETagHolder.cs" />
     <Compile Include="IETagHolder.cs" />
     <Compile Include="Metadata.cs" />
