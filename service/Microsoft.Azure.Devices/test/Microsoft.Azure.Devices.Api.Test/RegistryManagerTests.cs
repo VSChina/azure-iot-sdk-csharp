@@ -945,7 +945,7 @@ namespace Microsoft.Azure.Devices.Api.Test
         {
             var settingToReturn = new E2EDiagnosticSetting(50);
             var twin = new Twin("abcd");
-            twin.Properties.Desired = new TwinCollection("{__e2e_diag_sample_rate:50}");
+            twin.Properties.Desired = new TwinCollection("{__e2e_diag_sample_rate: 50}");
             var restOpMock = new Mock<IHttpClientHelper>();
             restOpMock.Setup(restOp => restOp.PatchAsync<Twin, Twin>(It.IsAny<Uri>(), It.IsAny<Twin>(), It.IsAny<string>(), It.IsAny<PutOperationType>(), It.IsAny<IDictionary<HttpStatusCode, Func<HttpResponseMessage, Task<Exception>>>>(), It.IsAny<CancellationToken>())).ReturnsAsync(twin);
 
@@ -986,7 +986,7 @@ namespace Microsoft.Azure.Devices.Api.Test
         public async Task GetE2EDiagnosticSettingAsyncTest()
         {
             var twin = new Twin("abcd");
-            twin.Properties.Desired = new TwinCollection("{__e2e_diag_sample_rate:50}");
+            twin.Properties.Desired = new TwinCollection("{__e2e_diag_sample_rate: 50}");
             var restOpMock = new Mock<IHttpClientHelper>();
             restOpMock.Setup(restOp => restOp.GetAsync<Twin>(It.IsAny<Uri>(), It.IsAny<Dictionary<HttpStatusCode, Func<HttpResponseMessage, Task<Exception>>>>(), null, It.IsAny<Boolean>(), It.IsAny<CancellationToken>())).ReturnsAsync(twin);
             var registryManager = new HttpRegistryManager(restOpMock.Object, IotHubName);

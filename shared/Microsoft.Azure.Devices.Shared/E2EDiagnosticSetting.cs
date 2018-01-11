@@ -36,7 +36,7 @@ namespace Microsoft.Azure.Devices.Shared
             {
                 if (value < 0 || value > 100)
                 {
-                    throw new ArgumentException("Sampling rate should between [0,100]");
+                    throw new ArgumentException("The range of diagnostic sampling percentage should be between [0,100].");
                 }
                 _samplingRate = value;
             }
