@@ -780,7 +780,7 @@ namespace Microsoft.Azure.Devices
             var settingJson = JsonConvert.SerializeObject(setting);
             twin.Properties.Desired = new TwinCollection(settingJson);
             twin.ETag = etag;
-            var twinResult = await UpdateTwinAsync(deviceId, twin, etag);
+            var twinResult = await UpdateTwinAsync(deviceId, twin, etag, cancellationToken);
             var updatedDiagnosticSetting = JsonConvert.DeserializeObject<E2EDiagnosticSetting>(twinResult.Properties.Desired.ToJson());
             return updatedDiagnosticSetting;
         }
